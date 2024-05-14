@@ -1,0 +1,8 @@
+rutas_configuracion.json
+ejemplo.spec
+__pycache__
+dist/
+build/
+escenario_ids.csv
+num_rows_after_cleaning.txt
+principal.spec
