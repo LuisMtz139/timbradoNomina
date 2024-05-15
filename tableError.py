@@ -175,16 +175,22 @@ class TableError:
 
                     
     def load_config_path(self):
-        if os.path.exists("rutas_configuracion.json"):
-           with open('rutas_configuracion.json', 'r') as f:
+        # Verifica si el archivo de configuración JSON existe
+        if not os.path.exists("rutas_configuracion.json"):
+            raise FileNotFoundError("El archivo rutas_configuracion.json no existe.")
+        
+        # Lee el contenido del archivo JSON
+        with open('rutas_configuracion.json', 'r') as f:
             data = json.load(f)
+        
+        # Obtiene la ruta de carpetas desde los datos leídos
+        self.path = data.get('Ruta de Carpetas')
+        if not self.path or not os.path.isdir(self.path):
+            raise ValueError(f"Ruta de Carpetas no es válida: {self.path}")
+        
+        print(f"Ruta de Carpetas: {self.path}")
+        return self.path
 
-        print(data['Ruta de Carpetas'])
-        self.path = data['Ruta de Carpetas']
-
-        tree = ET.parse(self.path)
-        root = tree.getroot()
-        return root.find('RutaCarpetas').text
 
     def create_scenario_directory(self, escenario_id):
         base_dir = os.path.join(self.config_path, escenario_id)
