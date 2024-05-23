@@ -93,7 +93,7 @@ class VistaPrincipal:
             
         tk.Label(self.inner_frame, text="Registro Patronal", font=("Arial", 15)).grid(row=0, column=len(inputs), padx=20, sticky=tk.W)
         
-        options = ['ORDINARIA IMSSS','TXT DOCENTE', 'ORDINARIA ISSSTE', 'EXTRAORDINARIA IMSSS', 'EXTRAORDINARIA ISSSTE']
+        options = ['ORDINARIA IMSSS','TXT ADMINISTRATIVO', 'ORDINARIA ISSSTE', 'EXTRAORDINARIA IMSSS', 'EXTRAORDINARIA ISSSTE']
         self.dropdown = ttk.Combobox(self.inner_frame, values=options, font=("Arial", 15), state="readonly", style="Custom.TCombobox", width=30)
         self.dropdown.grid(row=1, column=len(inputs), padx=20, sticky=tk.W)
         self.dropdown.bind("<<ComboboxSelected>>", self.validar_campos)
@@ -161,21 +161,25 @@ class VistaPrincipal:
         
     def mostrar_escenario_id(self, event):
         if event:
-            children = self.table.get_children()
-            for i, row in enumerate(children):
+            for i, row in enumerate(self.table.get_children()):
                 tag = 'oddrow' if i % 2 == 0 else 'evenrow'
                 self.table.item(row, tags=(tag,))
 
             item = self.table.focus()
-            escenario_id = self.table.item(item, "values")[0] if item else None
-            if escenario_id:
+            values = self.table.item(item, "values") if item else None
+            if values:
+                escenario_id = values[0]
+                quincena_no = values[1]
                 print("Escenario ID seleccionado:", escenario_id)
+                print("Quincena No. seleccionado:", quincena_no)
                 self.button_eliminar.config(state=tk.NORMAL)
                 self.escenario_id_seleccionado = escenario_id
+                self.quincena_no_seleccionado = quincena_no  # Guardar Quincena No. seleccionado
                 self.table.item(item, tags=('selectedrow',))
             else:
                 self.button_eliminar.config(state=tk.DISABLED)
                 self.escenario_id_seleccionado = None
+                self.quincena_no_seleccionado = None  
         
     def configurar_envio_datos(self):
         self.button_pressed = False
@@ -214,17 +218,19 @@ class VistaPrincipal:
 
         
             
+
     def Extraccion(self):
-        
         if os.path.exists("rutas_configuracion.json"):
-           with open('rutas_configuracion.json', 'r') as f:
-            data = json.load(f)
+            with open('rutas_configuracion.json', 'r', encoding='utf-8') as f:
+                data = json.load(f)
+        else:
+            print("El archivo 'rutas_configuracion.json' no existe.")
+            return
 
         print(data['Ruta de Carpetas'])
         print(data['RutaFinalService'])
         print(data['RutaJSON'])
         self.path = data['Ruta de Carpetas']
-    
 
         # Crear la carpeta "extraccion" si no existe
         extraccion_folder = os.path.join(self.path, self.escenario_id_seleccionado, "extraccion")
@@ -234,42 +240,58 @@ class VistaPrincipal:
         else:
             print(f"La carpeta 'extraccion' ya existe en la siguiente ubicación:\n{extraccion_folder}")
 
-        print("Extraccion de xml...")
+        print("Extracción de xml...")
         if hasattr(self, 'escenario_id_seleccionado') and self.escenario_id_seleccionado:
             print("ID del escenario seleccionado:", self.escenario_id_seleccionado)
             full_path = os.path.join(self.path, self.escenario_id_seleccionado)
             print("Ruta completa del escenario:", full_path)
+
             if os.path.exists(full_path):
                 print("Contenidos de la carpeta:")
                 for content in os.listdir(full_path):
                     print(content)
+
                 # Buscar la carpeta 'timbrado'
                 timbrado_path = os.path.join(full_path, 'timbrado')
                 if os.path.exists(timbrado_path):
                     print("Contenidos de la carpeta 'timbrado':")
                     for content in os.listdir(timbrado_path):
                         print(content)
+
                     # Buscar el archivo 'procesados.txt'
                     timbrados_file_path = os.path.join(timbrado_path, 'procesados.txt')
                     if os.path.exists(timbrados_file_path):
                         print("Contenido del archivo 'procesados.txt':")
-                        with open(timbrados_file_path, 'r') as file:
+                        with open(timbrados_file_path, 'r', encoding='utf-8') as file:
                             for line in file:
                                 parts = line.split('|')
                                 print(parts[0], parts[3])  # Imprime solo los elementos de interés
+
                                 if len(parts[3]) > 10:
                                     print("La línea '" + line.strip() + "' es un txt")
-                                    # Hacer una copia del archivo y nombrarlo de manera específica
-                                    new_file_name = "P" + parts[3][2:16] + '.xml'
-                                    shutil.copy(timbrados_file_path, os.path.join(extraccion_folder, new_file_name))
+                                    # Buscar un archivo xml que comienza con el nombre de la posición 0
+                                    xml_file_path = os.path.join(timbrado_path, parts[0] + '*.xml')
+                                    xml_files = glob.glob(xml_file_path)
+
+                                    if xml_files:
+                                        print("Archivo XML encontrado:", xml_files[0])
+                                        # Formar el nuevo nombre del archivo XML
+                                        new_file_name = "P" + parts[3][2:16] + '.xml'
+                                        new_xml_file_path = os.path.join(extraccion_folder, new_file_name)
+                                        # Copiar y renombrar el archivo XML
+                                        shutil.copy(xml_files[0], new_xml_file_path)
+                                        print("Archivo XML renombrado y copiado:", new_xml_file_path)
+                                    else:
+                                        print("No se encontró ningún archivo XML que comienza con", parts[0])
                                 else:
                                     print("La línea '" + line.strip() + "' no es un txt")
                                     # Buscar un archivo xml que comienza con el nombre de la posición 0
                                     xml_file_path = os.path.join(timbrado_path, parts[0] + '*.xml')
                                     xml_files = glob.glob(xml_file_path)
+
                                     if xml_files:
                                         print("Archivo XML encontrado:", xml_files[0])
-                                        # Parse the XML file and find the 'NumEmpleado' element
+                                        # Parsear el archivo XML y encontrar el elemento 'NumEmpleado'
                                         tree = ET.parse(xml_files[0])
                                         root = tree.getroot()
                                         receptor = root.find('.//{http://www.sat.gob.mx/nomina12}Receptor')
@@ -277,16 +299,17 @@ class VistaPrincipal:
                                             num_empleado = receptor.get('NumEmpleado')
                                             if num_empleado is not None:
                                                 print("NumEmpleado encontrado:", num_empleado)
-                                                
-                                                
-                                                if os.path.exists("escenario_ids.csv"):
-                                                    csv_file_pathd = os.path.abspath("escenario_ids.csv")
-                                                    print('existe ',csv_file_pathd )
-                                                else:
-                                                    print('no existe')
 
-                                                csv_file_path = csv_file_pathd
-                                                with open(csv_file_path, "r", newline='') as file:
+                                                # Verificar la existencia del archivo CSV
+                                                csv_file_path = "escenario_ids.csv"
+                                                if os.path.exists(csv_file_path):
+                                                    print('El archivo "escenario_ids.csv" existe:', os.path.abspath(csv_file_path))
+                                                else:
+                                                    print('El archivo "escenario_ids.csv" no existe.')
+                                                    return
+
+                                                # Leer el archivo CSV
+                                                with open(csv_file_path, "r", newline='', encoding='utf-8') as file:
                                                     reader = csv.reader(file)
                                                     for row in reader:
                                                         if row and row[0] == self.escenario_id_seleccionado:
@@ -307,12 +330,10 @@ class VistaPrincipal:
                                         print("No se encontró ningún archivo XML que comienza con", parts[0])
                             else:
                                 print("El archivo 'procesados.txt' no existe.")
-                    else:
-                        print("La carpeta 'timbrado' no existe.")
                 else:
-                    print("La carpeta especificada no existe.")
+                    print("La carpeta 'timbrado' no existe.")
             else:
-                print("No se ha seleccionado ningún escenario.")
+                print("La carpeta especificada no existe.")
         else:
             print("No se ha seleccionado ningún escenario.")
 
@@ -332,25 +353,25 @@ class VistaPrincipal:
 
     
     def mandar_correo(self):
-        if self.escenario_id_seleccionado:
+        if self.escenario_id_seleccionado and self.quincena_no_seleccionado:
             try:
                 # Construye la ruta base para el escenario seleccionado
                 base_path = os.path.join(self.path, self.escenario_id_seleccionado)
                 # Construye la ruta completa hacia la carpeta 'timbrado' dentro del escenario
+                print('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', self.escenario_id_seleccionado)
                 full_path = os.path.join(base_path, 'timbrado')
 
                 # Verifica si el directorio de 'timbrado' existe y si contiene el archivo 'procesados.txt'
                 if os.path.exists(full_path) and os.path.exists(os.path.join(full_path, 'procesados.txt')):
-
                     correo = EnviarCorreo()
-                    correo.otro(self.escenario_id_seleccionado)
+                    correo.otro(self.escenario_id_seleccionado, self.quincena_no_seleccionado)  # Pasar Quincena No. como parámetro
                 else:
                     print(f"No se encontraron los archivos necesarios en el directorio {full_path}.")
 
             except FileNotFoundError:
                 print("El archivo escenario_ids.csv no existe.")
         else:
-            print("No se ha seleccionado ningún escenario ID.")
+            print("No se ha seleccionado ningún escenario ID o Quincena No.")
 
         
         

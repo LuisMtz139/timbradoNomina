@@ -10,6 +10,7 @@ import xml.etree.ElementTree as ET
 from enviarCorreo import EnviarCorreo
 
 class DataPorceso2:
+    print('enviar correo proceso 2 ------------------------')
     def __init__(self):
         if os.path.exists("rutas_configuracion.json"):
             with open('rutas_configuracion.json', 'r') as f:
