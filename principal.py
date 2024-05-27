@@ -66,6 +66,7 @@ class VistaPrincipal:
 
             print(data['Ruta de Carpetas'])
             self.path = data['Ruta de Carpetas']
+            opciones_registro_patronal = data.get('OpcionesRegistroPatronal', [])
         
         vcmd = self.master.register(self.validar_quincena)
         
@@ -93,8 +94,7 @@ class VistaPrincipal:
             
         tk.Label(self.inner_frame, text="Registro Patronal", font=("Arial", 15)).grid(row=0, column=len(inputs), padx=20, sticky=tk.W)
         
-        options = ['ORDINARIA IMSSS','TXT ADMINISTRATIVO', 'ORDINARIA ISSSTE', 'EXTRAORDINARIA IMSSS', 'EXTRAORDINARIA ISSSTE']
-        self.dropdown = ttk.Combobox(self.inner_frame, values=options, font=("Arial", 15), state="readonly", style="Custom.TCombobox", width=30)
+        self.dropdown = ttk.Combobox(self.inner_frame, values=opciones_registro_patronal, font=("Arial", 15), state="readonly", style="Custom.TCombobox", width=30)
         self.dropdown.grid(row=1, column=len(inputs), padx=20, sticky=tk.W)
         self.dropdown.bind("<<ComboboxSelected>>", self.validar_campos)
 
@@ -116,6 +116,7 @@ class VistaPrincipal:
         self.button2 = tk.Button(self.inner_frame, text='Crear escenario', font=("Arial", 13), bg='light yellow', command=self.crear_escenario)
         self.button2.grid(row=1, column=len(inputs)+1, padx=10, sticky=tk.E)
         self.button2.config(state=tk.DISABLED)  # Deshabilitar el botón al inicio
+        
         
         self.table = ttk.Treeview(self.inner_frame)
         self.table['columns'] = ('#1', '#2', '#3', '#4')
@@ -220,129 +221,133 @@ class VistaPrincipal:
             
 
     def Extraccion(self):
-        if os.path.exists("rutas_configuracion.json"):
-            with open('rutas_configuracion.json', 'r', encoding='utf-8') as f:
-                data = json.load(f)
-        else:
-            print("El archivo 'rutas_configuracion.json' no existe.")
-            return
+            if os.path.exists("rutas_configuracion.json"):
+                with open('rutas_configuracion.json', 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+            else:
+                print("El archivo 'rutas_configuracion.json' no existe.")
+                return
 
-        print(data['Ruta de Carpetas'])
-        print(data['RutaFinalService'])
-        print(data['RutaJSON'])
-        self.path = data['Ruta de Carpetas']
+            print(data['Ruta de Carpetas'])
+            print(data['RutaFinalService'])
+            print(data['RutaJSON'])
+            self.path = data['Ruta de Carpetas']
 
-        # Crear la carpeta "extraccion" si no existe
-        extraccion_folder = os.path.join(self.path, self.escenario_id_seleccionado, "extraccion")
-        if not os.path.exists(extraccion_folder):
-            os.makedirs(extraccion_folder)
-            print(f"La carpeta 'extraccion' ha sido creada correctamente en la siguiente ubicación:\n{extraccion_folder}")
-        else:
-            print(f"La carpeta 'extraccion' ya existe en la siguiente ubicación:\n{extraccion_folder}")
+            # Crear la carpeta "extraccion" si no existe
+            extraccion_folder = os.path.join(self.path, self.escenario_id_seleccionado, "extraccion")
+            if not os.path.exists(extraccion_folder):
+                os.makedirs(extraccion_folder)
+                print(f"La carpeta 'extraccion' ha sido creada correctamente en la siguiente ubicación:\n{extraccion_folder}")
+            else:
+                print(f"La carpeta 'extraccion' ya existe en la siguiente ubicación:\n{extraccion_folder}")
 
-        print("Extracción de xml...")
-        if hasattr(self, 'escenario_id_seleccionado') and self.escenario_id_seleccionado:
-            print("ID del escenario seleccionado:", self.escenario_id_seleccionado)
-            full_path = os.path.join(self.path, self.escenario_id_seleccionado)
-            print("Ruta completa del escenario:", full_path)
+            print("Extracción de xml...")
+            if hasattr(self, 'escenario_id_seleccionado') and self.escenario_id_seleccionado:
+                print("ID del escenario seleccionado:", self.escenario_id_seleccionado)
+                full_path = os.path.join(self.path, self.escenario_id_seleccionado)
+                print("Ruta completa del escenario:", full_path)
 
-            if os.path.exists(full_path):
-                print("Contenidos de la carpeta:")
-                for content in os.listdir(full_path):
-                    print(content)
-
-                # Buscar la carpeta 'timbrado'
-                timbrado_path = os.path.join(full_path, 'timbrado')
-                if os.path.exists(timbrado_path):
-                    print("Contenidos de la carpeta 'timbrado':")
-                    for content in os.listdir(timbrado_path):
+                if os.path.exists(full_path):
+                    print("Contenidos de la carpeta:")
+                    for content in os.listdir(full_path):
                         print(content)
 
-                    # Buscar el archivo 'procesados.txt'
-                    timbrados_file_path = os.path.join(timbrado_path, 'procesados.txt')
-                    if os.path.exists(timbrados_file_path):
-                        print("Contenido del archivo 'procesados.txt':")
-                        with open(timbrados_file_path, 'r', encoding='utf-8') as file:
-                            for line in file:
-                                parts = line.split('|')
-                                print(parts[0], parts[3])  # Imprime solo los elementos de interés
+                    # Buscar la carpeta 'timbrado'
+                    timbrado_path = os.path.join(full_path, 'timbrado')
+                    if os.path.exists(timbrado_path):
+                        print("Contenidos de la carpeta 'timbrado':")
+                        for content in os.listdir(timbrado_path):
+                            print(content)
 
-                                if len(parts[3]) > 10:
-                                    print("La línea '" + line.strip() + "' es un txt")
-                                    # Buscar un archivo xml que comienza con el nombre de la posición 0
-                                    xml_file_path = os.path.join(timbrado_path, parts[0] + '*.xml')
-                                    xml_files = glob.glob(xml_file_path)
+                        # Buscar el archivo 'procesados.txt'
+                        timbrados_file_path = os.path.join(timbrado_path, 'procesados.txt')
+                        if os.path.exists(timbrados_file_path):
+                            print("Contenido del archivo 'procesados.txt':")
+                            with open(timbrados_file_path, 'r', encoding='utf-8') as file:
+                                for line in file:
+                                    parts = line.split('|')
+                                    print(parts[0], parts[3])  # Imprime solo los elementos de interés
 
-                                    if xml_files:
-                                        print("Archivo XML encontrado:", xml_files[0])
-                                        # Formar el nuevo nombre del archivo XML
-                                        new_file_name = "P" + parts[3][2:16] + '.xml'
-                                        new_xml_file_path = os.path.join(extraccion_folder, new_file_name)
-                                        # Copiar y renombrar el archivo XML
-                                        shutil.copy(xml_files[0], new_xml_file_path)
-                                        print("Archivo XML renombrado y copiado:", new_xml_file_path)
-                                    else:
-                                        print("No se encontró ningún archivo XML que comienza con", parts[0])
-                                else:
-                                    print("La línea '" + line.strip() + "' no es un txt")
-                                    # Buscar un archivo xml que comienza con el nombre de la posición 0
-                                    xml_file_path = os.path.join(timbrado_path, parts[0] + '*.xml')
-                                    xml_files = glob.glob(xml_file_path)
+                                    if len(parts[3]) > 10:
+                                        print("La línea '" + line.strip() + "' es un txt")
+                                        # Buscar un archivo xml que comienza con el nombre de la posición 0
+                                        xml_file_path = os.path.join(timbrado_path, parts[0] + '*.xml')
+                                        xml_files = glob.glob(xml_file_path)
 
-                                    if xml_files:
-                                        print("Archivo XML encontrado:", xml_files[0])
-                                        # Parsear el archivo XML y encontrar el elemento 'NumEmpleado'
-                                        tree = ET.parse(xml_files[0])
-                                        root = tree.getroot()
-                                        receptor = root.find('.//{http://www.sat.gob.mx/nomina12}Receptor')
-                                        if receptor is not None:
-                                            num_empleado = receptor.get('NumEmpleado')
-                                            if num_empleado is not None:
-                                                print("NumEmpleado encontrado:", num_empleado)
-
-                                                # Verificar la existencia del archivo CSV
-                                                csv_file_path = "escenario_ids.csv"
-                                                if os.path.exists(csv_file_path):
-                                                    print('El archivo "escenario_ids.csv" existe:', os.path.abspath(csv_file_path))
-                                                else:
-                                                    print('El archivo "escenario_ids.csv" no existe.')
-                                                    return
-
-                                                # Leer el archivo CSV
-                                                with open(csv_file_path, "r", newline='', encoding='utf-8') as file:
-                                                    reader = csv.reader(file)
-                                                    for row in reader:
-                                                        if row and row[0] == self.escenario_id_seleccionado:
-                                                            print("Escenario ID encontrado en CSV:", row)
-                                                            # Formar la ruta
-                                                            current_year = datetime.now().strftime('%y')
-                                                            ruta = "P" + current_year + row[2] + num_empleado
-                                                            print("Ruta formada:", ruta)
-                                                            # Hacer una copia del archivo XML y nombrarlo según la ruta formada
-                                                            new_xml_file_name = os.path.join(extraccion_folder, ruta + ".xml")
-                                                            shutil.copy(xml_files[0], new_xml_file_name)
-                                                            print("Copia del archivo XML creada:", new_xml_file_name)
-                                            else:
-                                                print("La etiqueta 'NumEmpleado' no tiene valor.")
+                                        if xml_files:
+                                            print("Archivo XML encontrado:", xml_files[0])
+                                            # Formar el nuevo nombre del archivo XML
+                                            new_file_name = "P" + parts[3][2:16] + '.xml'
+                                            new_xml_file_path = os.path.join(extraccion_folder, new_file_name)
+                                            # Copiar y renombrar el archivo XML
+                                            shutil.copy(xml_files[0], new_xml_file_path)
+                                            print("Archivo XML renombrado y copiado:", new_xml_file_path)
                                         else:
-                                            print("No se encontró la etiqueta 'Receptor' en el archivo XML.")
+                                            print("No se encontró ningún archivo XML que comienza con", parts[0])
                                     else:
-                                        print("No se encontró ningún archivo XML que comienza con", parts[0])
-                            else:
-                                print("El archivo 'procesados.txt' no existe.")
-                else:
-                    print("La carpeta 'timbrado' no existe.")
-            else:
-                print("La carpeta especificada no existe.")
-        else:
-            print("No se ha seleccionado ningún escenario.")
+                                        print("La línea '" + line.strip() + "' no es un txt")
+                                        # Buscar un archivo xml que comienza con el nombre de la posición 0
+                                        xml_file_path = os.path.join(timbrado_path, parts[0] + '*.xml')
+                                        xml_files = glob.glob(xml_file_path)
 
+                                        if xml_files:
+                                            print("Archivo XML encontrado:", xml_files[0])
+                                            # Parsear el archivo XML y encontrar el elemento 'NumEmpleado'
+                                            tree = ET.parse(xml_files[0])
+                                            root = tree.getroot()
+                                            receptor = root.find('.//{http://www.sat.gob.mx/nomina12}Receptor')
+                                            if receptor is not None:
+                                                num_empleado = receptor.get('NumEmpleado')
+                                                if num_empleado is not None:
+                                                    print("NumEmpleado encontrado:", num_empleado)
+
+                                                    # Verificar la existencia del archivo CSV
+                                                    csv_file_path = "escenario_ids.csv"
+                                                    if os.path.exists(csv_file_path):
+                                                        print('El archivo "escenario_ids.csv" existe:', os.path.abspath(csv_file_path))
+                                                    else:
+                                                        print('El archivo "escenario_ids.csv" no existe.')
+                                                        return
+
+                                                    # Leer el archivo CSV
+                                                    with open(csv_file_path, "r", newline='', encoding='utf-8') as file:
+                                                        reader = csv.reader(file)
+                                                        for row in reader:
+                                                            if row and row[0] == self.escenario_id_seleccionado:
+                                                                print("Escenario ID encontrado en CSV:", row)
+                                                                # Formar la ruta
+                                                                current_year = datetime.now().strftime('%y')
+                                                                ruta = "P" + current_year + row[2] + num_empleado
+                                                                print("Ruta formada:", ruta)
+                                                                # Hacer una copia del archivo XML y nombrarlo según la ruta formada
+                                                                new_xml_file_name = os.path.join(extraccion_folder, ruta + ".xml")
+                                                                shutil.copy(xml_files[0], new_xml_file_name)
+                                                                print("Copia del archivo XML creada:", new_xml_file_name)
+                                                else:
+                                                    print("La etiqueta 'NumEmpleado' no tiene valor.")
+                                            else:
+                                                print("No se encontró la etiqueta 'Receptor' en el archivo XML.")
+                                        else:
+                                            print("No se encontró ningún archivo XML que comienza con", parts[0])
+                        else:
+                            print("El archivo 'procesados.txt' no existe.")
+                    else:
+                        print("La carpeta 'timbrado' no existe.")
+                else:
+                    print("La carpeta especificada no existe.")
+            else:
+                print("No se ha seleccionado ningún escenario.")
+
+            # Mover el archivo folios.csv a la carpeta extraccion
+            folios_file_path = os.path.join(timbrado_path, 'folios.csv')
+            if os.path.exists(folios_file_path):
+                shutil.move(folios_file_path, extraccion_folder)
+                print(f"El archivo 'folios.csv' ha sido movido a la carpeta de extracción: {extraccion_folder}")
 
     def create_new_application(self):
-        new_app = Application()  # Crea una nueva instancia de Application
-        new_app.mainloop()  
-        self.auto_load_escenario()
-            
+            new_app = Application()  # Crea una nueva instancia de Application
+            new_app.mainloop()  
+            self.auto_load_escenario()
 
     
     def validar_campos(self, *args):

@@ -62,16 +62,9 @@ class EnviarCorreo:
             os.makedirs(universo_path, exist_ok=True)
             universo_file_path = os.path.join(universo_path, 'procesados_universo.txt')
 
-            # Leer y actualizar líneas de 'procesados.txt'
+            # Leer las líneas de 'procesados.txt'
             with open(procesados_path, 'r', encoding='utf-8') as file:
                 lines = file.readlines()
-
-            with open(procesados_path, 'w', encoding='utf-8') as file:
-                for line in lines:
-                    if ", OK" not in line:
-                        file.write(line.strip() + ", OK\n")
-                    else:
-                        file.write(line)
 
             # Copiar las líneas que no tienen 'OK' a 'procesados2.txt' y 'procesados_universo.txt'
             lines_to_copy = [line for line in lines if ", OK" not in line]
@@ -80,7 +73,7 @@ class EnviarCorreo:
             with open(universo_file_path, 'w', encoding='utf-8') as univ_file:
                 univ_file.writelines(lines_to_copy)
 
-            print("Las líneas han sido actualizadas y movidas a 'procesados2.txt' y 'procesados_universo.txt'.")
+            print("Las líneas han sido movidas a 'procesados2.txt' y 'procesados_universo.txt'.")
 
             lines_to_keep = []
             with open(procesados2_path, 'r', encoding='utf-8') as file:
@@ -99,7 +92,7 @@ class EnviarCorreo:
                             xmlPDF = data[3]
                             uuid = data[4]
 
-                            destino = data[5]
+                            destino = 'LuisMartinezMA12@gmail.com'
                             # Concatenar A y D
                             concatenated = rfc + xmlPDF
                             print("Concatenado A+D:", concatenated)
@@ -112,11 +105,13 @@ class EnviarCorreo:
                                 # Enviar notificación con archivos adjuntos
                                 print("Intentando enviar notificación...")
                                 result = self.send_notification(destino, xmlPDF, rfc, nombre, uuid, full_path, matching_files, quincena_no)
+                                if result == "Ok":
+                                    line = line.strip() + ", OK\n"
                             else:
                                 print("No se encontraron archivos que empiecen con", concatenated)
 
                             if ", OK" not in line:
-                                line = line.strip() + ", OK\n"
+                                lines_to_keep.append(line)
                         else:
                             print("Incorrect line (invalid email):", line)
                             lines_to_keep.append(line)
@@ -186,4 +181,3 @@ COLEGIO NACIONAL DE EDUCACION PROFESIONAL TECNICA"""
         except Exception as e:
             print(f"Error general al enviar el correo: {str(e)}")
             return f"Error: {str(e)}"
-
