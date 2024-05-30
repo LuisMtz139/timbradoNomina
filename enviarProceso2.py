@@ -26,24 +26,30 @@ class DataPorceso2:
         print('envio PROCESO 2', escenario_id_seleccionado)
         escenario_id = escenario_id_seleccionado
         if os.path.exists("escenario_ids.csv"):
-                csv_file_pathd = os.path.abspath("escenario_ids.csv")
-                print('existe ',csv_file_pathd )
+            csv_file_pathd = os.path.abspath("escenario_ids.csv")
+            print('existe ', csv_file_pathd)
         else:
-                print('no existe')
+            print('no existe')
+            return
 
         csv_file_path = csv_file_pathd
-    
+
         try:
             with open(csv_file_path, 'r') as file:
                 reader = csv.reader(file)
                 for row in reader:
                     if row[0] == escenario_id_seleccionado:
-                        valor1, valor2, valor3, valor4 = row[:4]
-                        quincena_no_encoded = urllib.parse.quote(valor3)
-                        registro_patronal_encoded = urllib.parse.quote(valor4)
-                        print(f"valor1 = {valor1}, valor2 = {valor2}, valor3 = {valor3}, valor4 = {valor4}")
+                        if len(row) >= 4:  # Verificar que la fila tenga al menos 4 elementos
+                            valor1, valor2, valor3, valor4 = row[:4]
+                            quincena_no_encoded = urllib.parse.quote(valor3)
+                            registro_patronal_encoded = urllib.parse.quote(valor4)
+                            print(f"valor1 = {valor1}, valor2 = {valor2}, valor3 = {valor3}, valor4 = {valor4}")
+                        else:
+                            print(f"Fila incompleta encontrada para el ID {escenario_id_seleccionado}: {row}")
+                            return
         except FileNotFoundError:
             print(f"No se encontró el archivo {csv_file_path}")
+            return
                 
         erroneos_dir = os.path.join(path, escenario_id_seleccionado, 'erroneos')
         if os.path.exists(erroneos_dir):
