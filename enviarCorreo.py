@@ -76,51 +76,62 @@ class EnviarCorreo:
             print("Las líneas han sido movidas a 'procesados2.txt' y 'procesados_universo.txt'.")
 
             lines_to_keep = []
-            with open(procesados2_path, 'r', encoding='utf-8') as file:
-                for line in file:
-                    line_without_ok = line.replace(", OK", "")
-                    if line_without_ok.count('|') == 5:
-                        last_field = line_without_ok.split('|')[-1].strip()
-                        if re.match(r"[^@]+@[^@]+\.[^@]+", last_field):
-                            print("Correct line:", line)
-                            data = line_without_ok.split('|')
-                            alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-                            for i, item in enumerate(data):
-                                print(f"{alphabet[i]}: {item}")
-                            rfc = data[0]
-                            nombre = data[1]
-                            xmlPDF = data[3]
-                            uuid = data[4]
+            for line in lines_to_copy:
+                line_without_ok = line.replace(", OK", "")
+                if line_without_ok.count('|') == 5:
+                    last_field = line_without_ok.split('|')[-1].strip()
+                    if re.match(r"[^@]+@[^@]+\.[^@]+", last_field):
+                        print("Correct line:", line)
+                        data = line_without_ok.split('|')
+                        alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+                        for i, item in enumerate(data):
+                            print(f"{alphabet[i]}: {item}")
+                        rfc = data[0]
+                        nombre = data[1]
+                        xmlPDF = data[3]
+                        uuid = data[4]
 
-                            destino = 'LuisMartinezMA12@gmail.com'
-                            # Concatenar A y D
-                            concatenated = rfc + xmlPDF
-                            print("Concatenado A+D:", concatenated)
+                        destino = data[5]
+                        # Concatenar A y D
+                        concatenated = rfc + xmlPDF
+                        print("Concatenado A+D:", concatenated)
 
-                            matching_files = [f for f in os.listdir(full_path) if f.startswith(concatenated)]
-                            if matching_files:
-                                print("Archivos encontrados que empiezan con", concatenated)
-                                for file in matching_files:
-                                    print(file)
-                                # Enviar notificación con archivos adjuntos
-                                print("Intentando enviar notificación...")
-                                result = self.send_notification(destino, xmlPDF, rfc, nombre, uuid, full_path, matching_files, quincena_no)
-                                if result == "Ok":
-                                    line = line.strip() + ", OK\n"
-                            else:
-                                print("No se encontraron archivos que empiecen con", concatenated)
-
-                            if ", OK" not in line:
-                                lines_to_keep.append(line)
+                        matching_files = [f for f in os.listdir(full_path) if f.startswith(concatenated)]
+                        if matching_files:
+                            print("Archivos encontrados que empiezan con", concatenated)
+                            for file in matching_files:
+                                print(file)
+                            # Enviar notificación con archivos adjuntos
+                            print("Intentando enviar notificación...")
+                            result = self.send_notification(destino, xmlPDF, rfc, nombre, uuid, full_path, matching_files, quincena_no)
+                            if result == "Ok":
+                                line = line.strip() + ", OK\n"
                         else:
-                            print("Incorrect line (invalid email):", line)
+                            print("No se encontraron archivos que empiecen con", concatenated)
+
+                        if ", OK" not in line:
                             lines_to_keep.append(line)
                     else:
-                        print("Incorrect line (wrong number of pipes):", line)
+                        print("Incorrect line (invalid email):", line)
                         lines_to_keep.append(line)
+                else:
+                    print("Incorrect line (wrong number of pipes):", line)
+                    lines_to_keep.append(line)
 
             with open(procesados2_path, 'w', encoding='utf-8') as file:
                 file.writelines(lines_to_keep)
+                
+            # Actualizar procesados.txt con las líneas que ahora contienen ', OK'
+            with open(procesados_path, 'w', encoding='utf-8') as file:
+                for line in lines:
+                    if line in lines_to_copy:
+                        if line in lines_to_keep:
+                            file.write(line)
+                        else:
+                            file.write(line.strip() + ", OK\n")
+                    else:
+                        file.write(line)
+
         except FileNotFoundError as e:
             print("Error: El archivo no existe.", e)
         except Exception as e:

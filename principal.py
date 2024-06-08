@@ -277,7 +277,7 @@ class VistaPrincipal:
                                         if xml_files:
                                             print("Archivo XML encontrado:", xml_files[0])
                                             # Formar el nuevo nombre del archivo XML
-                                            new_file_name = "P" + parts[3][2:16] + '.xml'
+                                            new_file_name = "CFD-P" + parts[3][2:16] + "NA" + '.xml'
                                             new_xml_file_path = os.path.join(extraccion_folder, new_file_name)
                                             # Copiar y renombrar el archivo XML
                                             shutil.copy(xml_files[0], new_xml_file_path)
@@ -317,7 +317,7 @@ class VistaPrincipal:
                                                                 print("Escenario ID encontrado en CSV:", row)
                                                                 # Formar la ruta
                                                                 current_year = datetime.now().strftime('%y')
-                                                                ruta = "P" + current_year + row[2] + num_empleado
+                                                                ruta = "CFD-P" + current_year + row[2] + num_empleado + "ND"
                                                                 print("Ruta formada:", ruta)
                                                                 # Hacer una copia del archivo XML y nombrarlo según la ruta formada
                                                                 new_xml_file_name = os.path.join(extraccion_folder, ruta + ".xml")
@@ -337,12 +337,11 @@ class VistaPrincipal:
                     print("La carpeta especificada no existe.")
             else:
                 print("No se ha seleccionado ningún escenario.")
-
-            # Mover el archivo folios.csv a la carpeta extraccion
+            # Copiar el archivo folios.csv a la carpeta extraccion
             folios_file_path = os.path.join(timbrado_path, 'folios.csv')
             if os.path.exists(folios_file_path):
-                shutil.move(folios_file_path, extraccion_folder)
-                print(f"El archivo 'folios.csv' ha sido movido a la carpeta de extracción: {extraccion_folder}")
+                shutil.copy(folios_file_path, extraccion_folder)
+                print(f"El archivo 'folios.csv' ha sido copiado a la carpeta de extracción: {extraccion_folder}")
 
     def create_new_application(self):
             new_app = Application()  # Crea una nueva instancia de Application

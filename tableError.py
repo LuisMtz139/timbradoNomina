@@ -1,4 +1,3 @@
-
 import json
 import re
 import shutil
@@ -6,11 +5,7 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import Scrollbar
 import os
-import xml.etree.ElementTree as ET
-import xml.etree.ElementTree as ET
 from enviarTest import DataSender
-
-import shutil
 
 class TableError:
     def __init__(self, master, escenario_id, quincena_no, registro_patronal_text):
@@ -78,14 +73,14 @@ class TableError:
         self.button = tk.Button(self.main_frame, text="Guardar", command=self.guardar_cerrar, state=tk.NORMAL)
         self.button.place(relx=0.1, rely=0.94, anchor=tk.CENTER)
         self.button.config(width=20, height=2)
-        
     
     def cerrar(self):
         self.master.destroy()
 
     def mostrar_contenido(self, event):
-        if self.listbox.curselection():
-            seleccion = self.listbox.get(self.listbox.curselection())
+        seleccion = self.listbox.curselection()
+        if seleccion:
+            seleccion = self.listbox.get(seleccion)
             print(f"Archivo seleccionado: {seleccion}")
             archivo_seleccionado_path = os.path.join(self.config_path, self.escenario_id, 'universo', seleccion)
             error_file_path = os.path.join(self.config_path, self.escenario_id, 'erroneos', 'errortimbrado.txt')
@@ -119,10 +114,6 @@ class TableError:
                 print(f"Ocurrió un error al intentar leer el archivo '{seleccion}': {e}")
                 self.error_text.delete(1.0, tk.END)
                 self.error_text.insert(tk.END, f"Error al leer el archivo '{seleccion}': {str(e)}")
-        else:
-            print("No hay selección en la lista")
-            self.error_text.delete(1.0, tk.END)
-            self.error_text.insert(tk.END, "No hay archivo seleccionado.")
 
     def setup_text_widget(self):
         self.error_text.bind("<KeyRelease>", self.on_key_release)
@@ -132,14 +123,14 @@ class TableError:
             self.master.after_cancel(self.save_timer)
         self.save_timer = self.master.after(10, self.guardar_cambios)
         
-        
     def guardar_cerrar(self):
         self.guardar_cambios()
         self.master.destroy()
 
     def guardar_cambios(self):
-        if self.listbox.curselection():
-            seleccion = self.listbox.get(self.listbox.curselection())
+        seleccion = self.listbox.curselection()
+        if seleccion:
+            seleccion = self.listbox.get(seleccion)
             archivo_seleccionado_path = os.path.join(self.config_path, self.escenario_id, 'universo', seleccion)
             contenido = self.error_text.get(1.0, tk.END)
             try:
@@ -163,7 +154,6 @@ class TableError:
                 self.master.after_cancel(self.save_timer)
             self.save_timer = self.master.after(10, self.guardar_cambios)  
 
-            
     def populate_listbox(self):
         universo_dir = os.path.join(self.config_path, self.escenario_id, 'universo')
         if os.path.exists(universo_dir):
@@ -173,17 +163,13 @@ class TableError:
                     self.listbox.insert(tk.END, file)
                     self.files_edited[file] = False  
 
-                    
     def load_config_path(self):
-        # Verifica si el archivo de configuración JSON existe
         if not os.path.exists("rutas_configuracion.json"):
             raise FileNotFoundError("El archivo rutas_configuracion.json no existe.")
         
-        # Lee el contenido del archivo JSON
         with open('rutas_configuracion.json', 'r') as f:
             data = json.load(f)
         
-        # Obtiene la ruta de carpetas desde los datos leídos
         self.path = data.get('Ruta de Carpetas')
         if not self.path or not os.path.isdir(self.path):
             raise ValueError(f"Ruta de Carpetas no es válida: {self.path}")
@@ -191,16 +177,12 @@ class TableError:
         print(f"Ruta de Carpetas: {self.path}")
         return self.path
 
-
     def create_scenario_directory(self, escenario_id):
         base_dir = os.path.join(self.config_path, escenario_id)
         os.makedirs(base_dir, exist_ok=True)
         
-            
     def actualizar_columna_error(self, mensaje):
-        """Actualiza la columna de error con el mensaje proporcionado."""
         self.escenario_id_label.config(text=mensaje)
-
 
     def eliminar_carpeta_erroneos(self):
         path_erroneos = os.path.join(self.config_path, self.escenario_id, 'erroneos')
@@ -218,7 +200,6 @@ class TableError:
         except Exception as e:
             print(f"Error al intentar limpiar la carpeta 'erroneos': {e}")
 
-
     def execute_test(self):
         try:
             self.eliminar_carpeta_erroneos()
@@ -232,7 +213,6 @@ class TableError:
                 print("Mostrar vista de errores llamada")
             data_sender.enviar_datos(entries, dropdown, self.config_path, dummy_mostrar_errores)
             self.actualizar_columna_errores_despues_del_test()
-
         except Exception as e:
             print("Error durante la ejecución del test:", e)
             self.actualizar_columna_error(f"Error durante la ejecución del test: {str(e)}")
@@ -254,7 +234,6 @@ class TableError:
     def cerrar_ventana(self):
         self.master.destroy()
 
-    
     def mostrar_vista_errores(self, num_rows_after_cleaning):
         if hasattr(self, 'new_window') and self.new_window.winfo_exists():
             return
@@ -264,7 +243,6 @@ class TableError:
         registro_patronal_text = self.dropdown.get().strip()
         registro_patronal = ''.join(re.findall(r'\d+', registro_patronal_text))
 
-        # Actualizar la columna POR_TIMBRAR de la tabla con el valor recibido
         self.table.insert('', 'end', values=(escenario_id, quincena_no, registro_patronal_text, '', '', '', num_rows_after_cleaning, ''))
         
         self.new_window = tk.Toplevel(self.master)
@@ -272,8 +250,6 @@ class TableError:
         window_x = self.master.winfo_x()
         window_y = self.master.winfo_y()
         self.new_window.geometry("+%d+%d" % (window_x, window_y))
-
-        
 
     def list_directory_contents(self):
         base_dir = os.path.join(self.config_path, self.escenario_id)
@@ -289,9 +265,8 @@ class TableError:
 
 def main():
     root = tk.Tk()
-    app = TableError(root )
+    app = TableError(root, "escenario_id_example", "quincena_no_example", "registro_patronal_example")
     root.mainloop()
 
 if __name__ == "__main__":
     main()
-
