@@ -182,7 +182,7 @@ COLEGIO NACIONAL DE EDUCACION PROFESIONAL TECNICA"""
             text = msg.as_string()
             print("Enviando correo a:", destino)
             server.sendmail(self.correo, destino, text)
-            time.sleep(2)
+            time.sleep(3)
             server.quit()
             print("Correo enviado con éxito.")
             return "Ok"
