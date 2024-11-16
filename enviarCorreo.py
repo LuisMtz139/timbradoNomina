@@ -75,71 +75,62 @@ class EnviarCorreo:
 
             print("Las líneas han sido movidas a 'procesados2.txt' y 'procesados_universo.txt'.")
 
-            lines_to_keep = []
-            for line in lines_to_copy:
-                line_without_ok = line.replace(", OK", "")
-                if line_without_ok.count('|') == 5:
-                    last_field = line_without_ok.split('|')[-1].strip()
-                    if re.match(r"[^@]+@[^@]+\.[^@]+", last_field):
-                        print("Correct line:", line)
-                        data = line_without_ok.split('|')
-                        alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-                        for i, item in enumerate(data):
-                            print(f"{alphabet[i]}: {item}")
-                        rfc = data[0]
-                        nombre = data[1]
-                        xmlPDF = data[3]
-                        uuid = data[4]
+            # Procesar líneas una por una
+            for i, line in enumerate(lines):
+                if ", OK" in line:
+                    continue  # Saltar líneas que ya tienen OK
 
-                        destino = data[5]
-                        # Concatenar A y D
+                line = line.strip()
+                if line.count('|') == 5:
+                    data = line.split('|')
+                    if re.match(r"[^@]+@[^@]+\.[^@]+", data[5].strip()):
+                        print(f"\nProcesando línea {i + 1}:", line)
+                        rfc = data[0].strip()
+                        nombre = data[1].strip()
+                        xmlPDF = data[3].strip()
+                        uuid = data[4].strip()
+                        destino = data[5].strip()
                         concatenated = rfc + xmlPDF
-                        print("Concatenado A+D:", concatenated)
 
                         matching_files = [f for f in os.listdir(full_path) if f.startswith(concatenated)]
                         if matching_files:
-                            print("Archivos encontrados que empiezan con", concatenated)
-                            for file in matching_files:
-                                print(file)
-                            # Enviar notificación con archivos adjuntos
-                            print("Intentando enviar notificación...")
+                            print("Archivos encontrados:", matching_files)
                             result = self.send_notification(destino, xmlPDF, rfc, nombre, uuid, full_path, matching_files, quincena_no)
+                            
                             if result == "Ok":
-                                line = line.strip() + ", OK\n"
+                                print("Correo enviado exitosamente. Actualizando archivos...")
+                                # Actualizar la línea en la lista principal
+                                lines[i] = line + ", OK\n"
+                                
+                                # Actualizar procesados.txt inmediatamente
+                                with open(procesados_path, 'w', encoding='utf-8') as file:
+                                    file.writelines(lines)
+                                
+                                # Actualizar procesados2.txt sin la línea que acabamos de procesar
+                                remaining_lines = [l for l in lines if ", OK" not in l]
+                                with open(procesados2_path, 'w', encoding='utf-8') as file:
+                                    file.writelines(remaining_lines)
+                                
+                                print("Archivos actualizados correctamente.")
+                                time.sleep(2)  # Pequeña pausa entre correos
+                            else:
+                                print(f"Error al enviar correo: {result}")
                         else:
-                            print("No se encontraron archivos que empiecen con", concatenated)
-
-                        if ", OK" not in line:
-                            lines_to_keep.append(line)
+                            print(f"No se encontraron archivos que empiecen con {concatenated}")
                     else:
-                        print("Incorrect line (invalid email):", line)
-                        lines_to_keep.append(line)
+                        print(f"Email inválido en línea: {line}")
                 else:
-                    print("Incorrect line (wrong number of pipes):", line)
-                    lines_to_keep.append(line)
-
-            with open(procesados2_path, 'w', encoding='utf-8') as file:
-                file.writelines(lines_to_keep)
-                
-            # Actualizar procesados.txt con las líneas que ahora contienen ', OK'
-            with open(procesados_path, 'w', encoding='utf-8') as file:
-                for line in lines:
-                    if line in lines_to_copy:
-                        if line in lines_to_keep:
-                            file.write(line)
-                        else:
-                            file.write(line.strip() + ", OK\n")
-                    else:
-                        file.write(line)
+                    print(f"Formato de línea inválido: {line}")
 
         except FileNotFoundError as e:
             print("Error: El archivo no existe.", e)
         except Exception as e:
             print("Error desconocido:", e)
+            raise
 
     def send_notification(self, destino, xml_pdf, rfc, nombre, uuid, full_path, attachments, quincena_no):
         try:
-            print("Intentando enviar correo...")
+            print("\nIntentando enviar correo...")
             print(f"De: {self.correo}")
             print(f"Para: {destino}")
             print(f"CC: rocencran@hotmail.com")
@@ -176,12 +167,12 @@ COLEGIO NACIONAL DE EDUCACION PROFESIONAL TECNICA"""
             print("Conectando al servidor SMTP...")
             server = smtplib.SMTP(self.host, self.puerto)
             server.starttls()
-            print(f"Conectado al servidor SMTP: {self.host}:{self.puerto}")
             server.login(self.correo, self.contrasena)
             print("Inicio de sesión SMTP exitoso")
+            
             text = msg.as_string()
-            print("Enviando correo a:", destino)
-            server.sendmail(self.correo, destino, text)
+            recipients = [destino, "rocencran@hotmail.com"]
+            server.sendmail(self.correo, recipients, text)
             time.sleep(3)
             server.quit()
             print("Correo enviado con éxito.")
