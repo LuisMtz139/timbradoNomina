@@ -133,13 +133,11 @@ class EnviarCorreo:
             print("\nIntentando enviar correo...")
             print(f"De: {self.correo}")
             print(f"Para: {destino}")
-            print(f"CC: rocencran@hotmail.com")
             print(f"Asunto: QNA {quincena_no} CFDI {xml_pdf} de {rfc} {nombre}")
 
             msg = MIMEMultipart()
             msg['From'] = self.correo
             msg['To'] = destino
-            msg['CC'] = "rocencran@hotmail.com"
             msg['Subject'] = f"QNA {quincena_no} CFDI {xml_pdf} de {rfc} {nombre}"
 
             body = f"""Estimado colaborador
@@ -171,7 +169,7 @@ COLEGIO NACIONAL DE EDUCACION PROFESIONAL TECNICA"""
             print("Inicio de sesión SMTP exitoso")
             
             text = msg.as_string()
-            recipients = [destino, "rocencran@hotmail.com"]
+            recipients = [destino]
             server.sendmail(self.correo, recipients, text)
             time.sleep(3)
             server.quit()
